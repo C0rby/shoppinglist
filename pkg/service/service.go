@@ -13,6 +13,14 @@ type Service struct {
 	store storage.Store
 }
 
-func (s Service) GetLists() ([]model.List, error) {
-	return s.store.GetLists()
+func (s Service) GetShoppingLists() ([]model.ShoppingList, error) {
+	return s.store.GetShoppingLists()
+}
+
+func (s Service) GetShoppingList(id string) (model.ShoppingList, error) {
+	return s.store.GetShoppingList(id)
+}
+
+func (s Service) GetShoppingListEntries(id string) ([]model.Entry, error) {
+	return s.store.GetShoppingListEntries(id)
 }

@@ -1,6 +1,6 @@
 package model
 
-type List struct {
+type ShoppingList struct {
 	ID   string
 	Name string
 }

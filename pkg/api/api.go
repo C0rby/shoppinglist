@@ -2,25 +2,139 @@ package api
 
 import (
 	"net/http"
-	"strings"
 
+	"github.com/c0rby/shoppinglist/pkg/model"
 	"github.com/c0rby/shoppinglist/pkg/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
+type api struct {
+	service service.Service
+}
+
 func Handler(service service.Service) http.Handler {
+	api := api{service: service}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/v1/lists", func(w http.ResponseWriter, r *http.Request) {
-		lists, _ := service.GetLists()
-		var sb strings.Builder
-		for _, l := range lists {
-			sb.WriteString(l.Name)
-			sb.WriteRune('\n')
-		}
-		w.Write([]byte(sb.String()))
+	r.Use(middleware.RequestID)
+	r.Use(middleware.URLFormat)
+	r.Route("/v1", func(r chi.Router) {
+		r.Route("/shoppinglists", func(r chi.Router) {
+			r.Get("/", api.ListShoppingLists)
+			r.Route("/{id}", func(r chi.Router) {
+				r.Get("/", api.GetShoppingList)
+				r.Route("/entries", func(r chi.Router) {
+					r.Get("/", api.ListShoppingListEntries)
+				})
+			})
+		})
 	})
 
 	return r
+}
+
+func (a api) ListShoppingLists(w http.ResponseWriter, r *http.Request) {
+	lists, _ := a.service.GetShoppingLists()
+	if err := render.RenderList(w, r, NewShoppingListsResponse(lists)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+func (a api) GetShoppingList(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	list, _ := a.service.GetShoppingList(id)
+	if err := render.Render(w, r, NewShoppingListResponse(list)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+func (a api) ListShoppingListEntries(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	entries, _ := a.service.GetShoppingListEntries(id)
+
+	if err := render.RenderList(w, r, NewEntryListResponse(entries)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+type ShoppingListResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (sr *ShoppingListResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+type EntryResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (sr *EntryResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+func NewEntryResponse(entry model.Entry) *EntryResponse {
+	return &EntryResponse{
+		ID:   entry.ID,
+		Name: entry.Name,
+	}
+}
+
+func NewEntryListResponse(entries []model.Entry) []render.Renderer {
+	response := make([]render.Renderer, 0, len(entries))
+	for _, e := range entries {
+		response = append(response, NewEntryResponse(e))
+	}
+	return response
+}
+
+func NewShoppingListResponse(list model.ShoppingList) *ShoppingListResponse {
+	return &ShoppingListResponse{
+		ID:   list.ID,
+		Name: list.Name,
+	}
+}
+
+func NewShoppingListsResponse(lists []model.ShoppingList) []render.Renderer {
+	response := make([]render.Renderer, 0, len(lists))
+	for _, l := range lists {
+		response = append(response, NewShoppingListResponse(l))
+	}
+	return response
+}
+
+func ErrRender(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusUnprocessableEntity,
+		StatusText:     "Error rendering response.",
+		ErrorText:      err.Error(),
+	}
+}
+
+// ErrResponse renderer type for handling all sorts of errors.
+//
+// In the best case scenario, the excellent github.com/pkg/errors package
+// helps reveal information on the error, setting it on Err, and in the Render()
+// method, using it to set the application-specific error code in AppCode.
+type ErrResponse struct {
+	Err            error `json:"-"` // low-level runtime error
+	HTTPStatusCode int   `json:"-"` // http response status code
+
+	StatusText string `json:"status"`          // user-level status message
+	AppCode    int64  `json:"code,omitempty"`  // application-specific error code
+	ErrorText  string `json:"error,omitempty"` // application-level error message, for debugging
+}
+
+func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	render.Status(r, e.HTTPStatusCode)
+	return nil
 }
