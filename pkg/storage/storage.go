@@ -4,8 +4,8 @@ import (
 	"github.com/c0rby/shoppinglist/pkg/model"
 )
 
-func New() Store {
-	return Store{
+func NewInMemStore() Store {
+	return InMemStore{
 		lists: []model.ShoppingList{
 			{ID: "123", Name: "Corby's list"},
 			{ID: "456", Name: "Cri-kee's list"},
@@ -35,16 +35,23 @@ func New() Store {
 	}
 }
 
-type Store struct {
+type Store interface {
+	GetShoppingLists() ([]model.ShoppingList, error)
+	GetShoppingList(id string) (model.ShoppingList, error)
+	GetShoppingListEntries(id string) ([]model.Entry, error)
+	StoreShoppingList(list model.ShoppingList) error
+}
+
+type InMemStore struct {
 	lists   []model.ShoppingList
 	entries map[string][]model.Entry
 }
 
-func (s Store) GetShoppingLists() ([]model.ShoppingList, error) {
+func (s InMemStore) GetShoppingLists() ([]model.ShoppingList, error) {
 	return s.lists, nil
 }
 
-func (s Store) GetShoppingList(id string) (model.ShoppingList, error) {
+func (s InMemStore) GetShoppingList(id string) (model.ShoppingList, error) {
 	for _, l := range s.lists {
 		if l.ID == id {
 			return l, nil
@@ -53,6 +60,11 @@ func (s Store) GetShoppingList(id string) (model.ShoppingList, error) {
 	return model.ShoppingList{}, nil
 }
 
-func (s Store) GetShoppingListEntries(id string) ([]model.Entry, error) {
+func (s InMemStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 	return s.entries[id], nil
+}
+
+func (s InMemStore) StoreShoppingList(list model.ShoppingList) error {
+	s.lists = append(s.lists, list)
+	return nil
 }

@@ -20,7 +20,18 @@ func New() Server {
 func (s Server) ListenAndServe() error {
 	router := chi.NewRouter()
 
-	store := storage.New()
+	db, err := storage.NewSqlite3DB("./shoppinglist.sqlite")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if err := storage.CreateTables(db); err != nil {
+		return err
+	}
+	store, err := storage.NewSqlStore(db)
+	if err != nil {
+		return err
+	}
 	service := service.New(store)
 	router.Mount("/api", api.Handler(service))
 

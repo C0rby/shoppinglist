@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/c0rby/shoppinglist/pkg/model"
@@ -24,6 +25,7 @@ func Handler(service service.Service) http.Handler {
 	r.Route("/v1", func(r chi.Router) {
 		r.Route("/shoppinglists", func(r chi.Router) {
 			r.Get("/", api.ListShoppingLists)
+			r.Post("/", api.CreateShoppingList)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", api.GetShoppingList)
 				r.Route("/entries", func(r chi.Router) {
@@ -63,9 +65,46 @@ func (a api) ListShoppingListEntries(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type ShoppingListResponse struct {
+func (a api) CreateShoppingList(w http.ResponseWriter, r *http.Request) {
+	data := &ShoppingListRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	shoppingList := data.ShoppingList
+
+	created, err := a.service.CreateShoppingList(model.ShoppingList{Name: shoppingList.Name})
+	if err != nil {
+		render.Render(w, r, ErrInternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, NewShoppingListResponse(created))
+
+}
+
+type ShoppingList struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type ShoppingListRequest struct {
+	*ShoppingList
+}
+
+func (s *ShoppingListRequest) Bind(r *http.Request) error {
+	if s.ShoppingList == nil {
+		return errors.New("missing required ShoppingList fields")
+	}
+
+	// The requests shouldn't contain Ids
+	s.ShoppingList.ID = ""
+	return nil
+}
+
+type ShoppingListResponse struct {
+	*ShoppingList
 }
 
 func (sr *ShoppingListResponse) Render(w http.ResponseWriter, r *http.Request) error {
@@ -98,8 +137,10 @@ func NewEntryListResponse(entries []model.Entry) []render.Renderer {
 
 func NewShoppingListResponse(list model.ShoppingList) *ShoppingListResponse {
 	return &ShoppingListResponse{
-		ID:   list.ID,
-		Name: list.Name,
+		ShoppingList: &ShoppingList{
+			ID:   list.ID,
+			Name: list.Name,
+		},
 	}
 }
 
@@ -137,4 +178,22 @@ type ErrResponse struct {
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	render.Status(r, e.HTTPStatusCode)
 	return nil
+}
+
+func ErrInvalidRequest(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusBadRequest,
+		StatusText:     "Invalid request.",
+		ErrorText:      err.Error(),
+	}
+}
+
+func ErrInternalServerError(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusInternalServerError,
+		StatusText:     "Internal Server error.",
+		ErrorText:      err.Error(),
+	}
 }
