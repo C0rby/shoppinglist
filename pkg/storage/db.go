@@ -23,15 +23,19 @@ func CreateTables(db *sql.DB) error {
 	shoppinglistsTable := `
 	CREATE TABLE IF NOT EXISTS shoppinglists(
 		Id TEXT NOT NULL PRIMARY KEY,
-		Name TEXT
+		Name TEXT NOT NULL
 	);`
 
 	listEntriesTable := `
 	CREATE TABLE IF NOT EXISTS entries(
 		Id TEXT NOT NULL PRIMARY KEY,
-		Name TEXT,
+		Name TEXT NOT NULL,
+		Buy BOOLEAN,
 		List_Id TEXT,
-		FOREIGN KEY(List_Id) REFERENCES shoppinglists(Id)
+		CONSTRAINT fk_shoppinglists
+			FOREIGN KEY(List_Id)
+			REFERENCES shoppinglists(Id)
+			ON DELETE CASCADE
 	);`
 	if _, err := db.Exec(shoppinglistsTable); err != nil {
 		return err
@@ -67,7 +71,7 @@ func (s SqlStore) GetShoppingLists() ([]model.ShoppingList, error) {
 }
 
 func (s SqlStore) GetShoppingList(id string) (model.ShoppingList, error) {
-	stmt, err := s.db.Prepare("SELECT id, name FROM shoppinglists where id=?")
+	stmt, err := s.db.Prepare("SELECT Id, Name FROM shoppinglists where Id=?")
 	if err != nil {
 		return model.ShoppingList{}, err
 	}
@@ -86,7 +90,7 @@ func (s SqlStore) GetShoppingList(id string) (model.ShoppingList, error) {
 }
 
 func (s SqlStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
-	stmt, err := s.db.Prepare("SELECT id, name FROM entries where list_id=?")
+	stmt, err := s.db.Prepare("SELECT Id, Name, Buy FROM entries where List_Id=?")
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +99,7 @@ func (s SqlStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 	var (
 		entryId string
 		name    string
+		buy     bool
 		entries []model.Entry
 	)
 	rows, err := stmt.Query(id)
@@ -104,11 +109,11 @@ func (s SqlStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err = rows.Scan(&entryId, &name)
+		err = rows.Scan(&entryId, &name, &buy)
 		if err != nil {
 			return nil, err
 		}
-		entries = append(entries, model.Entry{ID: entryId, Name: name})
+		entries = append(entries, model.Entry{ID: entryId, Name: name, Buy: buy})
 	}
 	return entries, nil
 }
@@ -127,5 +132,47 @@ func (s SqlStore) StoreShoppingList(list model.ShoppingList) error {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(list.ID, list.Name)
+	return err
+}
+
+func (s SqlStore) DeleteShoppingList(id string) error {
+	sqlDeleteShoppingList := "DELETE FROM shoppinglists WHERE Id = ?"
+
+	_, err := s.db.Exec(sqlDeleteShoppingList, id)
+	return err
+}
+
+func (s SqlStore) StoreShoppingListEntry(listID string, entry model.Entry) error {
+	sqlAddShoppingListEntry := `
+	INSERT INTO entries(
+		Id,
+		Name,
+		Buy,
+		List_Id
+	) VALUES(?, ?, ?, ?)`
+
+	stmt, err := s.db.Prepare(sqlAddShoppingListEntry)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(entry.ID, entry.Name, entry.Buy, listID)
+	return err
+}
+
+func (s SqlStore) UpdateShoppingListEntry(entry model.Entry) error {
+	sqlUpdateShoppingListEntry := `
+	UPDATE entries 
+	SET Name = ?, Buy = ?
+	WHERE Id = ?;`
+
+	stmt, err := s.db.Prepare(sqlUpdateShoppingListEntry)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(entry.Name, entry.Buy, entry.ID)
 	return err
 }

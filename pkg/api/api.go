@@ -11,6 +11,11 @@ import (
 	"github.com/go-chi/render"
 )
 
+const (
+	_paramListId  = "listId"
+	_paramEntryId = "entryId"
+)
+
 type api struct {
 	service service.Service
 }
@@ -26,10 +31,13 @@ func Handler(service service.Service) http.Handler {
 		r.Route("/shoppinglists", func(r chi.Router) {
 			r.Get("/", api.ListShoppingLists)
 			r.Post("/", api.CreateShoppingList)
-			r.Route("/{id}", func(r chi.Router) {
+			r.Route("/{listId}", func(r chi.Router) {
 				r.Get("/", api.GetShoppingList)
+				r.Delete("/", api.DeleteShoppingList)
 				r.Route("/entries", func(r chi.Router) {
 					r.Get("/", api.ListShoppingListEntries)
+					r.Post("/", api.CreateListEntry)
+					r.Put("/{entryId}", api.UpdateListEntry)
 				})
 			})
 		})
@@ -47,7 +55,7 @@ func (a api) ListShoppingLists(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a api) GetShoppingList(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, _paramListId)
 	list, _ := a.service.GetShoppingList(id)
 	if err := render.Render(w, r, NewShoppingListResponse(list)); err != nil {
 		render.Render(w, r, ErrRender(err))
@@ -56,7 +64,7 @@ func (a api) GetShoppingList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a api) ListShoppingListEntries(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, _paramListId)
 	entries, _ := a.service.GetShoppingListEntries(id)
 
 	if err := render.RenderList(w, r, NewEntryListResponse(entries)); err != nil {
@@ -81,7 +89,52 @@ func (a api) CreateShoppingList(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, NewShoppingListResponse(created))
+}
 
+func (a api) DeleteShoppingList(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, _paramListId)
+	if err := a.service.DeleteShoppingList(id); err != nil {
+		render.Render(w, r, ErrInternalServerError(err))
+		return
+	}
+	render.NoContent(w, r)
+}
+
+func (a api) CreateListEntry(w http.ResponseWriter, r *http.Request) {
+	listID := chi.URLParam(r, _paramListId)
+	data := &ShoppingListEntryRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	entry := data.ShoppingListEntry
+	created, err := a.service.CreateShoppingListEntry(listID, model.Entry{Name: entry.Name})
+	if err != nil {
+		render.Render(w, r, ErrInternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, NewEntryResponse(created))
+}
+
+func (a api) UpdateListEntry(w http.ResponseWriter, r *http.Request) {
+	entryID := chi.URLParam(r, _paramEntryId)
+
+	data := &ShoppingListEntryRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	entry := data.ShoppingListEntry
+	updated, err := a.service.UpdateShoppingListEntry(model.Entry{ID: entryID, Name: entry.Name, Buy: entry.Buy})
+	if err != nil {
+		render.Render(w, r, ErrInternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, NewEntryResponse(updated))
 }
 
 type ShoppingList struct {
@@ -103,6 +156,12 @@ func (s *ShoppingListRequest) Bind(r *http.Request) error {
 	return nil
 }
 
+type ShoppingListEntry struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Buy  bool   `json:"buy"`
+}
+
 type ShoppingListResponse struct {
 	*ShoppingList
 }
@@ -111,19 +170,35 @@ func (sr *ShoppingListResponse) Render(w http.ResponseWriter, r *http.Request) e
 	return nil
 }
 
-type EntryResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type ShoppingListEntryRequest struct {
+	*ShoppingListEntry
 }
 
-func (sr *EntryResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (s *ShoppingListEntryRequest) Bind(r *http.Request) error {
+	if s.ShoppingListEntry == nil {
+		return errors.New("missing required ShoppingListEntry fields")
+	}
+
+	// The requests shouldn't contain Ids
+	s.ShoppingListEntry.ID = ""
 	return nil
 }
 
-func NewEntryResponse(entry model.Entry) *EntryResponse {
-	return &EntryResponse{
-		ID:   entry.ID,
-		Name: entry.Name,
+type ShoppingListEntryResponse struct {
+	*ShoppingListEntry
+}
+
+func (sr *ShoppingListEntryResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+func NewEntryResponse(entry model.Entry) *ShoppingListEntryResponse {
+	return &ShoppingListEntryResponse{
+		ShoppingListEntry: &ShoppingListEntry{
+			ID:   entry.ID,
+			Name: entry.Name,
+			Buy:  entry.Buy,
+		},
 	}
 }
 

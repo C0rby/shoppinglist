@@ -33,3 +33,23 @@ func (s Service) CreateShoppingList(list model.ShoppingList) (model.ShoppingList
 	}
 	return list, nil
 }
+
+func (s Service) DeleteShoppingList(id string) error {
+	return s.store.DeleteShoppingList(id)
+}
+
+func (s Service) CreateShoppingListEntry(listID string, entry model.Entry) (model.Entry, error) {
+	entry.ID = uuid.New().String()
+	entry.Buy = true
+	if err := s.store.StoreShoppingListEntry(listID, entry); err != nil {
+		return model.Entry{}, err
+	}
+	return entry, nil
+}
+
+func (s Service) UpdateShoppingListEntry(entry model.Entry) (model.Entry, error) {
+	if err := s.store.UpdateShoppingListEntry(entry); err != nil {
+		return model.Entry{}, err
+	}
+	return entry, nil
+}

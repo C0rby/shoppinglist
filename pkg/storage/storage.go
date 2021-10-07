@@ -40,6 +40,9 @@ type Store interface {
 	GetShoppingList(id string) (model.ShoppingList, error)
 	GetShoppingListEntries(id string) ([]model.Entry, error)
 	StoreShoppingList(list model.ShoppingList) error
+	DeleteShoppingList(id string) error
+	StoreShoppingListEntry(listID string, entry model.Entry) error
+	UpdateShoppingListEntry(entry model.Entry) error
 }
 
 type InMemStore struct {
@@ -66,5 +69,18 @@ func (s InMemStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 
 func (s InMemStore) StoreShoppingList(list model.ShoppingList) error {
 	s.lists = append(s.lists, list)
+	return nil
+}
+
+func (s InMemStore) DeleteShoppingList(id string) error {
+	return nil
+}
+
+func (s InMemStore) StoreShoppingListEntry(listID string, entry model.Entry) error {
+	s.entries[listID] = append(s.entries[listID], entry)
+	return nil
+}
+
+func (s InMemStore) UpdateShoppingListEntry(entry model.Entry) error {
 	return nil
 }

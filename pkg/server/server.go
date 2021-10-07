@@ -20,7 +20,7 @@ func New() Server {
 func (s Server) ListenAndServe() error {
 	router := chi.NewRouter()
 
-	db, err := storage.NewSqlite3DB("./shoppinglist.sqlite")
+	db, err := storage.NewSqlite3DB("./shoppinglist.sqlite?_fk=true")
 	if err != nil {
 		return err
 	}
