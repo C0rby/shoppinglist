@@ -65,8 +65,11 @@ func (a api) GetShoppingList(w http.ResponseWriter, r *http.Request) {
 
 func (a api) ListShoppingListEntries(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, _paramListId)
-	entries, _ := a.service.GetShoppingListEntries(id)
-
+	entries, err := a.service.GetShoppingListEntries(id)
+	if err != nil {
+		render.Render(w, r, ErrInternalServerError(err))
+		return
+	}
 	if err := render.RenderList(w, r, NewEntryListResponse(entries)); err != nil {
 		render.Render(w, r, ErrRender(err))
 		return
@@ -108,7 +111,7 @@ func (a api) CreateListEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entry := data.ShoppingListEntry
-	created, err := a.service.CreateShoppingListEntry(listID, model.Entry{Name: entry.Name})
+	created, err := a.service.CreateShoppingListEntry(listID, model.Entry{Name: entry.Name, Amount: entry.Amount})
 	if err != nil {
 		render.Render(w, r, ErrInternalServerError(err))
 		return
@@ -127,7 +130,7 @@ func (a api) UpdateListEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entry := data.ShoppingListEntry
-	updated, err := a.service.UpdateShoppingListEntry(model.Entry{ID: entryID, Name: entry.Name, Buy: entry.Buy})
+	updated, err := a.service.UpdateShoppingListEntry(model.Entry{ID: entryID, Name: entry.Name, Amount: entry.Amount, Buy: entry.Buy})
 	if err != nil {
 		render.Render(w, r, ErrInternalServerError(err))
 		return
@@ -157,9 +160,10 @@ func (s *ShoppingListRequest) Bind(r *http.Request) error {
 }
 
 type ShoppingListEntry struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Buy  bool   `json:"buy"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Amount string `json:"amount"`
+	Buy    bool   `json:"buy"`
 }
 
 type ShoppingListResponse struct {
@@ -195,9 +199,10 @@ func (sr *ShoppingListEntryResponse) Render(w http.ResponseWriter, r *http.Reque
 func NewEntryResponse(entry model.Entry) *ShoppingListEntryResponse {
 	return &ShoppingListEntryResponse{
 		ShoppingListEntry: &ShoppingListEntry{
-			ID:   entry.ID,
-			Name: entry.Name,
-			Buy:  entry.Buy,
+			ID:     entry.ID,
+			Name:   entry.Name,
+			Amount: entry.Amount,
+			Buy:    entry.Buy,
 		},
 	}
 }

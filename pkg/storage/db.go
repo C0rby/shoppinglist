@@ -30,6 +30,7 @@ func CreateTables(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS entries(
 		Id TEXT NOT NULL PRIMARY KEY,
 		Name TEXT NOT NULL,
+		Amount TEXT,
 		Buy BOOLEAN,
 		List_Id TEXT,
 		CONSTRAINT fk_shoppinglists
@@ -90,15 +91,15 @@ func (s SqlStore) GetShoppingList(id string) (model.ShoppingList, error) {
 }
 
 func (s SqlStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
-	stmt, err := s.db.Prepare("SELECT Id, Name, Buy FROM entries where List_Id=?")
+	stmt, err := s.db.Prepare("SELECT Id, Name, Amount, Buy FROM entries where List_Id=?")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
-
 	var (
 		entryId string
 		name    string
+		amount  string
 		buy     bool
 		entries []model.Entry
 	)
@@ -109,11 +110,11 @@ func (s SqlStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err = rows.Scan(&entryId, &name, &buy)
+		err = rows.Scan(&entryId, &name, &amount, &buy)
 		if err != nil {
 			return nil, err
 		}
-		entries = append(entries, model.Entry{ID: entryId, Name: name, Buy: buy})
+		entries = append(entries, model.Entry{ID: entryId, Name: name, Amount: amount, Buy: buy})
 	}
 	return entries, nil
 }
@@ -147,9 +148,10 @@ func (s SqlStore) StoreShoppingListEntry(listID string, entry model.Entry) error
 	INSERT INTO entries(
 		Id,
 		Name,
+		Amount,
 		Buy,
 		List_Id
-	) VALUES(?, ?, ?, ?)`
+	) VALUES(?, ?, ?, ?, ?)`
 
 	stmt, err := s.db.Prepare(sqlAddShoppingListEntry)
 	if err != nil {
@@ -157,14 +159,14 @@ func (s SqlStore) StoreShoppingListEntry(listID string, entry model.Entry) error
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(entry.ID, entry.Name, entry.Buy, listID)
+	_, err = stmt.Exec(entry.ID, entry.Name, entry.Amount, entry.Buy, listID)
 	return err
 }
 
 func (s SqlStore) UpdateShoppingListEntry(entry model.Entry) error {
 	sqlUpdateShoppingListEntry := `
 	UPDATE entries 
-	SET Name = ?, Buy = ?
+	SET Name = ?, Amount = ?, Buy = ?
 	WHERE Id = ?;`
 
 	stmt, err := s.db.Prepare(sqlUpdateShoppingListEntry)
@@ -173,6 +175,6 @@ func (s SqlStore) UpdateShoppingListEntry(entry model.Entry) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(entry.Name, entry.Buy, entry.ID)
+	_, err = stmt.Exec(entry.Name, entry.Amount, entry.Buy, entry.ID)
 	return err
 }

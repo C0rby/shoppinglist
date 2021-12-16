@@ -6,7 +6,8 @@ type ShoppingList struct {
 }
 
 type Entry struct {
-	ID   string
-	Name string
-	Buy  bool
+	ID     string
+	Name   string
+	Amount string
+	Buy    bool
 }

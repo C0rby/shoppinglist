@@ -7,6 +7,7 @@ import (
 	"github.com/c0rby/shoppinglist/pkg/service"
 	"github.com/c0rby/shoppinglist/pkg/storage"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 type Server struct {
@@ -14,12 +15,16 @@ type Server struct {
 }
 
 func New() Server {
-	return Server{address: ":3000"}
+	return Server{address: ":8000"}
 }
 
 func (s Server) ListenAndServe() error {
 	router := chi.NewRouter()
-
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{http.MethodGet, http.MethodOptions, http.MethodPost, http.MethodPut},
+		AllowedHeaders: []string{"Content-Type"},
+	}))
 	db, err := storage.NewSqlite3DB("./shoppinglist.sqlite?_fk=true")
 	if err != nil {
 		return err

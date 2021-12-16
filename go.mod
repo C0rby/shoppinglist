@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
+	github.com/go-chi/cors v1.2.0
 	github.com/go-chi/render v1.0.1
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.8
