@@ -11,3 +11,14 @@ type Entry struct {
 	Amount string
 	Buy    bool
 }
+
+type User struct {
+	ID       string
+	Name     string
+	Password string
+}
+
+type Session struct {
+	ID   string
+	User User
+}

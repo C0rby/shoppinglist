@@ -17,3 +17,5 @@ require (
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 )
+
+require golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect

@@ -4,6 +4,7 @@ import (
 	"github.com/c0rby/shoppinglist/pkg/model"
 	"github.com/c0rby/shoppinglist/pkg/storage"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func New(store storage.Store) Service {
@@ -27,7 +28,7 @@ func (s Service) GetShoppingListEntries(id string) ([]model.Entry, error) {
 }
 
 func (s Service) CreateShoppingList(list model.ShoppingList) (model.ShoppingList, error) {
-	list.ID = uuid.New().String()
+	list.ID = uuid.NewString()
 	if err := s.store.StoreShoppingList(list); err != nil {
 		return model.ShoppingList{}, err
 	}
@@ -39,7 +40,7 @@ func (s Service) DeleteShoppingList(id string) error {
 }
 
 func (s Service) CreateShoppingListEntry(listID string, entry model.Entry) (model.Entry, error) {
-	entry.ID = uuid.New().String()
+	entry.ID = uuid.NewString()
 	entry.Buy = true
 	if err := s.store.StoreShoppingListEntry(listID, entry); err != nil {
 		return model.Entry{}, err
@@ -52,4 +53,39 @@ func (s Service) UpdateShoppingListEntry(entry model.Entry) (model.Entry, error)
 		return model.Entry{}, err
 	}
 	return entry, nil
+}
+
+func (s Service) CreateUser(u model.User) (model.User, error) {
+	u.ID = uuid.NewString()
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return u, err
+	}
+	u.Password = string(hashed)
+	return u, s.store.StoreUser(u)
+}
+
+func (s Service) GetUsers() ([]model.User, error) {
+	return s.store.GetUsers()
+}
+
+func (s Service) AuthenticateUser(name, password string) (model.Session, error) {
+	user, err := s.store.FindUserByName(name)
+	if err != nil {
+		return model.Session{}, err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return model.Session{}, err
+	}
+
+	return model.Session{
+		ID:   uuid.NewString(),
+		User: user,
+	}, nil
+}
+
+func (s Service) AuthenticateSession(sid string) (model.Session, error) {
+	return model.Session{}, nil
 }

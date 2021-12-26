@@ -39,10 +39,13 @@ type Store interface {
 	GetShoppingLists() ([]model.ShoppingList, error)
 	GetShoppingList(id string) (model.ShoppingList, error)
 	GetShoppingListEntries(id string) ([]model.Entry, error)
-	StoreShoppingList(list model.ShoppingList) error
+	StoreShoppingList(l model.ShoppingList) error
 	DeleteShoppingList(id string) error
 	StoreShoppingListEntry(listID string, entry model.Entry) error
-	UpdateShoppingListEntry(entry model.Entry) error
+	UpdateShoppingListEntry(e model.Entry) error
+	GetUsers() ([]model.User, error)
+	StoreUser(u model.User) error
+	FindUserByName(name string) (model.User, error)
 }
 
 type InMemStore struct {
@@ -67,8 +70,8 @@ func (s InMemStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 	return s.entries[id], nil
 }
 
-func (s InMemStore) StoreShoppingList(list model.ShoppingList) error {
-	s.lists = append(s.lists, list)
+func (s InMemStore) StoreShoppingList(l model.ShoppingList) error {
+	s.lists = append(s.lists, l)
 	return nil
 }
 
@@ -76,11 +79,23 @@ func (s InMemStore) DeleteShoppingList(id string) error {
 	return nil
 }
 
-func (s InMemStore) StoreShoppingListEntry(listID string, entry model.Entry) error {
-	s.entries[listID] = append(s.entries[listID], entry)
+func (s InMemStore) StoreShoppingListEntry(listID string, e model.Entry) error {
+	s.entries[listID] = append(s.entries[listID], e)
 	return nil
 }
 
-func (s InMemStore) UpdateShoppingListEntry(entry model.Entry) error {
+func (s InMemStore) UpdateShoppingListEntry(e model.Entry) error {
 	return nil
+}
+
+func (s InMemStore) GetUsers() ([]model.User, error) {
+	return nil, nil
+}
+
+func (s InMemStore) StoreUser(u model.User) error {
+	return nil
+}
+
+func (s InMemStore) FindUserByName(n string) (model.User, error) {
+	return model.User{}, nil
 }

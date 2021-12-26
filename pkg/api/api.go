@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/c0rby/shoppinglist/pkg/model"
 	"github.com/c0rby/shoppinglist/pkg/service"
@@ -28,6 +29,11 @@ func Handler(service service.Service) http.Handler {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.URLFormat)
 	r.Route("/v1", func(r chi.Router) {
+		r.Post("/authenticate", api.AuthenticateUser)
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/", api.ListUsers)
+			r.Post("/", api.CreateUser)
+		})
 		r.Route("/shoppinglists", func(r chi.Router) {
 			r.Get("/", api.ListShoppingLists)
 			r.Post("/", api.CreateShoppingList)
@@ -44,6 +50,60 @@ func Handler(service service.Service) http.Handler {
 	})
 
 	return r
+}
+
+func (a api) AuthenticateUser(w http.ResponseWriter, r *http.Request) {
+	data := &AuthenticateRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	session, err := a.service.AuthenticateUser(data.Username, data.Password)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	expiration := time.Now().Add(365 * 24 * time.Hour)
+	cookie := http.Cookie{
+		Name:     "session_id",
+		Value:    session.ID,
+		Expires:  expiration,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   true,
+	}
+	http.SetCookie(w, &cookie)
+	render.Render(w, r, NewUserResponse(session.User))
+}
+
+func (a api) ListUsers(w http.ResponseWriter, r *http.Request) {
+	users, _ := a.service.GetUsers()
+	if err := render.RenderList(w, r, NewUsersResponse(users)); err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+}
+
+func (a api) CreateUser(w http.ResponseWriter, r *http.Request) {
+	data := &UserRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	u := model.User{
+		Name:     data.Name,
+		Password: data.Password,
+	}
+	created, err := a.service.CreateUser(u)
+	if err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
+
+	render.Render(w, r, NewUserResponse(created))
 }
 
 func (a api) ListShoppingLists(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +205,23 @@ type ShoppingList struct {
 	Name string `json:"name"`
 }
 
+type User struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Password string `json:"password,omitempty"`
+}
+
+type UserRequest struct {
+	*User
+}
+
+func (u *UserRequest) Bind(r *http.Request) error {
+	if u.Name == "" {
+		return errors.New("missing name")
+	}
+	return nil
+}
+
 type ShoppingListRequest struct {
 	*ShoppingList
 }
@@ -159,11 +236,31 @@ func (s *ShoppingListRequest) Bind(r *http.Request) error {
 	return nil
 }
 
+type AuthenticateRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (a *AuthenticateRequest) Bind(r *http.Request) error {
+	if a.Username == "" || a.Password == "" {
+		return errors.New("missing required authentication fields")
+	}
+	return nil
+}
+
 type ShoppingListEntry struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Amount string `json:"amount"`
 	Buy    bool   `json:"buy"`
+}
+
+type UserResponse struct {
+	*User
+}
+
+func (sr *UserResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }
 
 type ShoppingListResponse struct {
@@ -228,6 +325,23 @@ func NewShoppingListsResponse(lists []model.ShoppingList) []render.Renderer {
 	response := make([]render.Renderer, 0, len(lists))
 	for _, l := range lists {
 		response = append(response, NewShoppingListResponse(l))
+	}
+	return response
+}
+
+func NewUserResponse(u model.User) *UserResponse {
+	return &UserResponse{
+		User: &User{
+			ID:   u.ID,
+			Name: u.Name,
+		},
+	}
+}
+
+func NewUsersResponse(users []model.User) []render.Renderer {
+	response := make([]render.Renderer, 0, len(users))
+	for _, u := range users {
+		response = append(response, NewUserResponse(u))
 	}
 	return response
 }

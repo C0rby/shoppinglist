@@ -38,10 +38,20 @@ func CreateTables(db *sql.DB) error {
 			REFERENCES shoppinglists(Id)
 			ON DELETE CASCADE
 	);`
+
+	usersTable := `
+	CREATE TABLE IF NOT EXISTS users(
+		Id TEXT NOT NULL PRIMARY KEY,
+		Name TEXT NOT NULL,
+		Password TEXT NOT NULL
+	);`
 	if _, err := db.Exec(shoppinglistsTable); err != nil {
 		return err
 	}
-	_, err := db.Exec(listEntriesTable)
+	if _, err := db.Exec(listEntriesTable); err != nil {
+		return err
+	}
+	_, err := db.Exec(usersTable)
 	return err
 }
 
@@ -119,7 +129,7 @@ func (s SqlStore) GetShoppingListEntries(id string) ([]model.Entry, error) {
 	return entries, nil
 }
 
-func (s SqlStore) StoreShoppingList(list model.ShoppingList) error {
+func (s SqlStore) StoreShoppingList(l model.ShoppingList) error {
 	sqlAddShoppingList := `
 	INSERT INTO shoppinglists(
 		Id,
@@ -132,7 +142,7 @@ func (s SqlStore) StoreShoppingList(list model.ShoppingList) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(list.ID, list.Name)
+	_, err = stmt.Exec(l.ID, l.Name)
 	return err
 }
 
@@ -143,7 +153,7 @@ func (s SqlStore) DeleteShoppingList(id string) error {
 	return err
 }
 
-func (s SqlStore) StoreShoppingListEntry(listID string, entry model.Entry) error {
+func (s SqlStore) StoreShoppingListEntry(listID string, e model.Entry) error {
 	sqlAddShoppingListEntry := `
 	INSERT INTO entries(
 		Id,
@@ -159,11 +169,11 @@ func (s SqlStore) StoreShoppingListEntry(listID string, entry model.Entry) error
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(entry.ID, entry.Name, entry.Amount, entry.Buy, listID)
+	_, err = stmt.Exec(e.ID, e.Name, e.Amount, e.Buy, listID)
 	return err
 }
 
-func (s SqlStore) UpdateShoppingListEntry(entry model.Entry) error {
+func (s SqlStore) UpdateShoppingListEntry(e model.Entry) error {
 	sqlUpdateShoppingListEntry := `
 	UPDATE entries 
 	SET Name = ?, Amount = ?, Buy = ?
@@ -175,6 +185,68 @@ func (s SqlStore) UpdateShoppingListEntry(entry model.Entry) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(entry.Name, entry.Amount, entry.Buy, entry.ID)
+	_, err = stmt.Exec(e.Name, e.Amount, e.Buy, e.ID)
 	return err
+}
+
+func (s SqlStore) GetUsers() ([]model.User, error) {
+	rows, err := s.db.Query("SELECT Id, Name FROM users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		id    string
+		name  string
+		users []model.User
+	)
+	for rows.Next() {
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, model.User{ID: id, Name: name})
+	}
+	return users, nil
+}
+
+func (s SqlStore) StoreUser(u model.User) error {
+	sqlAddUser := `
+	INSERT INTO users(
+		Id,
+		Name,
+		Password
+	) VALUES(?, ?, ?)`
+
+	stmt, err := s.db.Prepare(sqlAddUser)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.ID, u.Name, u.Password)
+	return err
+}
+
+func (s SqlStore) FindUserByName(n string) (model.User, error) {
+	stmt, err := s.db.Prepare("SELECT Id, Name, Password FROM users where Name=?")
+	if err != nil {
+		return model.User{}, nil
+	}
+	defer stmt.Close()
+	var (
+		id       string
+		name     string
+		password string
+	)
+	row := stmt.QueryRow(n)
+	switch err := row.Scan(&id, &name, &password); err {
+	case sql.ErrNoRows:
+		return model.User{}, err
+	case nil:
+		return model.User{ID: id, Name: name, Password: password}, nil
+	default:
+		return model.User{}, err
+	}
 }
