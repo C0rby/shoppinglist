@@ -1,5 +1,5 @@
 <template>
-  <div v-if="list && list.name">
+  <div>
     <div class="row mb-2">
       <h1>{{ list.name }}</h1>
       <div>
@@ -71,57 +71,24 @@
   </div>
 </template>
 <script>
-import { ref, toRaw, reactive } from "vue";
+import { ref, toRaw, reactive, onMounted } from "vue";
+import useShoppingListEntries from "../store/listentries";
 
 export default {
   name: "ShoppingListEntries",
   props: {
     list: Object,
   },
-  setup() {
-    const data = reactive({ list: [] });
-    const loading = ref(true);
+  setup(props) {
+    const { loading, fetchListEntries, listEntries } = useShoppingListEntries();
     const error = reactive({ message: "" });
     const search = ref("");
     const name = ref("");
     const amount = ref("");
 
-    function fetchData(id) {
-      loading.value = true;
-      return fetch(
-        import.meta.env.VITE_BACKEND_URL + "/api/v1/shoppinglists/" +
-          this.list.id +
-          "/entries",
-        {
-          method: "get",
-          headers: {
-            "content-type": "application/json",
-          },
-        }
-      )
-        .then((res) => {
-          if (!res.ok) {
-            const error = new Error(res.statusText);
-            error.json = res.json();
-            throw error;
-          }
-          return res.json();
-        })
-        .then((json) => {
-          data.list = json;
-        })
-        .catch((err) => {
-          error.value = err;
-          if (err.json) {
-            return err.json.then((json) => {
-              error.value.message = json.message;
-            });
-          }
-        })
-        .then(() => {
-          loading.value = false;
-        });
-    }
+    onMounted(() => {
+      fetchListEntries(props.list.id);
+    });
 
     function addEntry(id) {
       fetch(
@@ -143,7 +110,7 @@ export default {
           return res.json();
         })
         .then((json) => {
-          data.list.push(json);
+          listEntries.value.push(json);
           name.value = "";
           amount.value = "";
         })
@@ -175,26 +142,25 @@ export default {
     }
 
     return {
-      data,
       loading,
-      error,
-      fetchData,
+      listEntries,
       search,
       name,
       amount,
       addEntry,
       updateEntry,
+      fetchListEntries,
     };
   },
   watch: {
-    list: function () {
-      this.fetchData();
-    },
+    list: function(nval) {
+      this.fetchListEntries(toRaw(nval).id)
+    }
   },
   computed: {
     filteredResults() {
       if (!this.search)
-        return this.data.list.sort((a, b) => {
+        return this.listEntries.sort((a, b) => {
           if (b.buy > a.buy) {
             return 1;
           }
@@ -209,7 +175,7 @@ export default {
           }
         });
 
-      return this.data.list
+      return this.listEntries
         .map((elem) => {
           return toRaw(elem);
         })

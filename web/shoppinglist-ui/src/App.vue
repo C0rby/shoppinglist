@@ -4,18 +4,14 @@
 import { ref } from "vue";
 import ShoppingLists from "./components/ShoppingLists.vue";
 import ShoppingListEntries from "./components/ListEntries.vue";
+import useShoppingLists from "./store/shoppinglists";
 
 export default {
   name: "App",
   setup() {
-    const selectedList = ref({});
-
-    function setSelection(list) {
-      selectedList.value = list;
-    }
+    const { selectedList } = useShoppingLists();
 
     return {
-      setSelection,
       selectedList,
     };
   },
@@ -52,8 +48,8 @@ export default {
       </div>
     </header>
     <div style="max-width: 600px; margin: auto">
-      <shopping-lists @selected="setSelection" />
-      <shopping-list-entries v-bind:list="selectedList" />
+      <shopping-lists />
+      <shopping-list-entries v-if="selectedList" :list="selectedList" />
     </div>
   </div>
 </template>
