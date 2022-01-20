@@ -44,6 +44,7 @@ func Handler(service service.Service) http.Handler {
 					r.Get("/", api.ListShoppingListEntries)
 					r.Post("/", api.CreateListEntry)
 					r.Put("/{entryId}", api.UpdateListEntry)
+					r.Delete("/{entryId}", api.DeleteListEntry)
 				})
 			})
 		})
@@ -198,6 +199,15 @@ func (a api) UpdateListEntry(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, NewEntryResponse(updated))
+}
+
+func (a api) DeleteListEntry(w http.ResponseWriter, r *http.Request) {
+	entryID := chi.URLParam(r, _paramEntryId)
+
+	if err := a.service.DeleteShoppingListEntry(entryID); err != nil {
+		render.Render(w, r, ErrInternalServerError(err))
+		return
+	}
 }
 
 type ShoppingList struct {

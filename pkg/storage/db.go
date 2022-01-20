@@ -189,6 +189,19 @@ func (s SqlStore) UpdateShoppingListEntry(e model.Entry) error {
 	return err
 }
 
+func (s SqlStore) DeleteShoppingListEntry(id string) error {
+	sqlDeleteShoppingListEntry := "DELETE FROM entries WHERE Id = ?"
+
+	stmt, err := s.db.Prepare(sqlDeleteShoppingListEntry)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	return err
+}
+
 func (s SqlStore) GetUsers() ([]model.User, error) {
 	rows, err := s.db.Query("SELECT Id, Name FROM users")
 	if err != nil {

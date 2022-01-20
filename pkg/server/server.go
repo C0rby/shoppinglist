@@ -22,7 +22,7 @@ func (s Server) ListenAndServe() error {
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{http.MethodGet, http.MethodOptions, http.MethodPost, http.MethodPut},
+		AllowedMethods: []string{http.MethodGet, http.MethodOptions, http.MethodPost, http.MethodPut, http.MethodDelete},
 		AllowedHeaders: []string{"Content-Type"},
 	}))
 	db, err := storage.NewSqlite3DB("./shoppinglist.sqlite?_fk=true")

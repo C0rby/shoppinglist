@@ -55,6 +55,10 @@ func (s Service) UpdateShoppingListEntry(entry model.Entry) (model.Entry, error)
 	return entry, nil
 }
 
+func (s Service) DeleteShoppingListEntry(id string) error {
+	return s.store.DeleteShoppingListEntry(id)
+}
+
 func (s Service) CreateUser(u model.User) (model.User, error) {
 	u.ID = uuid.NewString()
 

@@ -43,6 +43,7 @@ type Store interface {
 	DeleteShoppingList(id string) error
 	StoreShoppingListEntry(listID string, entry model.Entry) error
 	UpdateShoppingListEntry(e model.Entry) error
+	DeleteShoppingListEntry(id string) error
 	GetUsers() ([]model.User, error)
 	StoreUser(u model.User) error
 	FindUserByName(name string) (model.User, error)
@@ -85,6 +86,10 @@ func (s InMemStore) StoreShoppingListEntry(listID string, e model.Entry) error {
 }
 
 func (s InMemStore) UpdateShoppingListEntry(e model.Entry) error {
+	return nil
+}
+
+func (s InMemStore) DeleteShoppingListEntry(id string) error {
 	return nil
 }
 
