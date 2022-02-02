@@ -17,18 +17,25 @@ const (
 	_paramEntryId = "entryId"
 )
 
+var hb *hub
+
 type api struct {
 	service service.Service
 }
 
 func Handler(service service.Service) http.Handler {
 	api := api{service: service}
+	hb = newHub()
+	go hb.run()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.URLFormat)
 	r.Route("/v1", func(r chi.Router) {
+		r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+			serveWs(hb, w, r)
+		})
 		r.Post("/authenticate", api.AuthenticateUser)
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/", api.ListUsers)
@@ -178,6 +185,8 @@ func (a api) CreateListEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hb.broadcast <- []byte(listID)
+
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, NewEntryResponse(created))
 }
@@ -197,6 +206,9 @@ func (a api) UpdateListEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	listID := chi.URLParam(r, _paramListId)
+	hb.broadcast <- []byte(listID)
+
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, NewEntryResponse(updated))
 }
@@ -208,6 +220,10 @@ func (a api) DeleteListEntry(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInternalServerError(err))
 		return
 	}
+
+	listID := chi.URLParam(r, _paramListId)
+	hb.broadcast <- []byte(listID)
+	render.NoContent(w, r)
 }
 
 type ShoppingList struct {

@@ -2,8 +2,9 @@
   <div>
     <div class="row mb-2">
       <h1>{{ list.name }}</h1>
-      <div>
+      <div class="input-group">
         <input
+          id="search"
           v-model="search"
           @input="filter"
           class="form-control"
@@ -12,6 +13,31 @@
           aria-label="Find"
           style="background-color: #f3f3f3"
         />
+        <button
+          id="clearbtn"
+          type="button"
+          class="btn bg-transparent"
+          style="margin-left: -40px; z-index: 100"
+          @click="clearSearch()"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            class="bi bi-x-lg"
+            viewBox="0 0 16 16"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M13.854 2.146a.5.5 0 0 1 0 .708l-11 11a.5.5 0 0 1-.708-.708l11-11a.5.5 0 0 1 .708 0Z"
+            />
+            <path
+              fill-rule="evenodd"
+              d="M2.146 2.146a.5.5 0 0 0 0 .708l11 11a.5.5 0 0 0 .708-.708l-11-11a.5.5 0 0 0-.708 0Z"
+            />
+          </svg>
+        </button>
       </div>
     </div>
     <div class="row mb-1">
@@ -88,7 +114,10 @@
             </button>
             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
               <li>
-                <a class="dropdown-item" href="#" @click="deleteEntry(list.id, entry)"
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click="deleteEntry(list.id, entry)"
                   ><svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -130,7 +159,17 @@ export default {
     const search = ref("");
     const name = ref("");
     const amount = ref("");
-
+    const conn = new WebSocket(import.meta.env.VITE_WS_URL + "/api/v1/ws");
+    conn.onclose = function (evt) {
+      let item = document.createElement("div");
+      item.innerHTML = "<b>Connection closed.</b>";
+    };
+    conn.onmessage = function (evt) {
+      let listId = evt.data.trim();
+      if (listId === props.list.id) {
+        fetchListEntries(listId);
+      }
+    };
     onMounted(() => {
       fetchListEntries(props.list.id);
     });
@@ -200,11 +239,11 @@ export default {
         {
           method: "DELETE",
         }
-      ).then(() => {
-      this.fetchListEntries(props.list.id);
-      }
       );
+    }
 
+    function clearSearch() {
+      search.value = "";
     }
 
     return {
@@ -217,6 +256,7 @@ export default {
       updateEntry,
       deleteEntry,
       fetchListEntries,
+      clearSearch,
     };
   },
   watch: {
@@ -261,5 +301,11 @@ export default {
 }
 #btn-add-entry {
   width: 100%;
+}
+#search {
+  border-radius: 0.25rem;
+}
+#clearbtn:focus {
+  box-shadow: none;
 }
 </style>
