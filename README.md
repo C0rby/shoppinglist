@@ -7,7 +7,7 @@ This webapp solves my need for shoppinglist which is synced between different de
 It is intended to be as simple as possible while providing a good user experience.
 
 The vuejs code is ~~probably~~ awful. Please give me some feedback if you have any tips for improvements. I'm learning as I go.
-Also I'd rather have something awful than not having anything at all.
+Also I'd rather have something awful than not having anything at all. (First make it work, then make it pretty.)
 
 Todo:
 * User accounts
