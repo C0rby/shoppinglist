@@ -1,19 +1,16 @@
 <script>
 // https://dev.to/burakgur/create-todo-app-with-vue-3-composition-api-1ok7
 
-import { ref } from "vue";
+import { provide } from "vue";
+import store from "./store";
 import ShoppingLists from "./components/ShoppingLists.vue";
 import ShoppingListEntries from "./components/ListEntries.vue";
-import useShoppingLists from "./store/shoppinglists";
 
 export default {
-  name: "App",
   setup() {
-    const { selectedList } = useShoppingLists();
+    provide('store', store)
 
-    return {
-      selectedList,
-    };
+    return {};
   },
   components: {
     ShoppingLists,
@@ -49,7 +46,7 @@ export default {
     </header>
     <div style="max-width: 600px; margin: auto">
       <shopping-lists />
-      <shopping-list-entries v-if="selectedList" :list="selectedList" />
+      <shopping-list-entries />
     </div>
   </div>
 </template>

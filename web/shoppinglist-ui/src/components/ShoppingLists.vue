@@ -1,17 +1,17 @@
 <template>
   <div class="row">
-    <h1 v-if="loading">Loading lists...</h1>
+    <h1 v-if="store.state.loading">Loading lists...</h1>
     <div v-else style="overflow-x: scroll; white-space: nowrap">
       <button
         style="margin-right: 8px"
         class="btn"
         :class="{
-          'btn-outline-secondary': selectedList !== l,
-          'btn-primary': selectedList == l,
+          'btn-outline-secondary': store.state.selectedList !== l,
+          'btn-primary': store.state.selectedList == l,
         }"
-        v-for="l of shoppinglists"
+        v-for="l of store.state.shoppinglists"
         :key="l.id"
-        @click="selectedList = l"
+        @click="store.state.selectedList = l"
       >
         {{ l.name }}
       </button>
@@ -19,22 +19,19 @@
   </div>
 </template>
 <script>
-import { onMounted } from "vue";
-import useShoppingLists from "../store/shoppinglists";
+import { onMounted, inject } from "vue";
 
 export default {
   name: "ShoppingLists",
   setup() {
-    const { shoppinglists, fetchLists, selectedList, loading } = useShoppingLists();
+    const store = inject('store')
 
     onMounted(() => {
-      fetchLists();
+      store.methods.fetchLists();
     });
 
     return {
-      shoppinglists,
-      selectedList,
-      loading,
+      store,
     };
   },
 };

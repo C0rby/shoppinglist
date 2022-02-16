@@ -1,22 +1,27 @@
-import { reactive, toRefs } from "vue";
+import { reactive, readonly } from "@vue/reactivity";
 
 const url = import.meta.env.VITE_BACKEND_URL + "/api/v1/shoppinglists";
 
 const state = reactive({
     shoppinglists: [],
     loading: true,
-    selectedList: null
+    selectedList: null,
+    name: '',
+    amount: '',
+    entries: [],
 });
 
-export default function useShoppingLists() {
-    const fetchLists = async () => {
+const methods = {
+    async fetchLists() {
         state.loading = true;
         state.shoppinglists = await (await fetch(url)).json();
         state.loading = false;
     }
-
-    return {
-        ...toRefs(state),
-        fetchLists
-    }
 }
+
+export default {
+    state: state,
+    methods,
+};
+
+

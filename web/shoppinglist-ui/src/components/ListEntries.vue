@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div v-if="store.state.selectedList">
     <div class="row mb-2">
-      <h1>{{ list.name }}</h1>
+      <h1>{{ store.state.selectedList.name }}</h1>
       <div class="input-group">
         <input
           id="search"
@@ -64,7 +64,7 @@
           class="btn btn-outline-secondary"
           type="button"
           id="btn-add-entry"
-          @click="addEntry(list.id)"
+          @click="addEntry(list.id, name, amount)"
         >
           Add
         </button>
@@ -145,73 +145,38 @@
   </div>
 </template>
 <script>
-import { ref, toRaw, reactive, onMounted } from "vue";
+import { ref, toRaw, inject, watch } from "vue";
 import useShoppingListEntries from "../store/listentries";
 
 export default {
   name: "ShoppingListEntries",
-  props: {
-    list: Object,
-  },
-  setup(props) {
-    const { loading, fetchListEntries, listEntries } = useShoppingListEntries();
-    const error = reactive({ message: "" });
+  setup() {
+    const store = inject('store')
+
+    const { loading, fetchListEntries, listEntries, addEntry } = useShoppingListEntries();
     const search = ref("");
     const name = ref("");
     const amount = ref("");
     const conn = new WebSocket(import.meta.env.VITE_WS_URL + "/api/v1/ws");
-    conn.onclose = function (evt) {
+
+    conn.onclose = () => {
       let item = document.createElement("div");
       item.innerHTML = "<b>Connection closed.</b>";
     };
-    conn.onmessage = function (evt) {
+
+    conn.onmessage = (evt) => {
       let listId = evt.data.trim();
-      if (listId === props.list.id) {
+      if (listId === store.state.selectedList.id) {
         fetchListEntries(listId);
       }
     };
-    onMounted(() => {
-      fetchListEntries(props.list.id);
+
+    watch(() => store.state.selectedList, (val) => {
+      console.log(val)
+      fetchListEntries(val.id);
     });
 
-    function addEntry(id) {
-      fetch(
-        import.meta.env.VITE_BACKEND_URL +
-          "/api/v1/shoppinglists/" +
-          id +
-          "/entries",
-        {
-          method: "post",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ name: name.value, amount: amount.value }),
-        }
-      )
-        .then((res) => {
-          if (!res.ok) {
-            const error = new Error(res.statusText);
-            error.json = res.json();
-            throw error;
-          }
-          return res.json();
-        })
-        .then((json) => {
-          listEntries.value.push(json);
-          name.value = "";
-          amount.value = "";
-        })
-        .catch((err) => {
-          error.value = err;
-          if (err.json) {
-            return err.json.then((json) => {
-              error.value.message = json.message;
-            });
-          }
-        });
-    }
-
-    function updateEntry(listId, entry) {
+    const updateEntry = (listId, entry) => {
       entry.buy = !entry.buy;
       fetch(
         import.meta.env.VITE_BACKEND_URL +
@@ -229,7 +194,7 @@ export default {
       );
     }
 
-    function deleteEntry(listId, entry) {
+    const deleteEntry = (listId, entry) => {
       fetch(
         import.meta.env.VITE_BACKEND_URL +
           "/api/v1/shoppinglists/" +
@@ -247,6 +212,7 @@ export default {
     }
 
     return {
+      store,
       loading,
       listEntries,
       search,
@@ -257,12 +223,8 @@ export default {
       deleteEntry,
       fetchListEntries,
       clearSearch,
+      addEntry,
     };
-  },
-  watch: {
-    list: function (nval) {
-      this.fetchListEntries(toRaw(nval).id);
-    },
   },
   computed: {
     filteredResults() {
