@@ -83,7 +83,6 @@
               type="checkbox"
               :checked="!entry.buy"
               :value="!entry.buy"
-              aria-label="..."
               @change="updateEntry(list.id, entry)"
             />
             {{ entry.name }}

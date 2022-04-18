@@ -1,27 +1,27 @@
-<script>
-// https://dev.to/burakgur/create-todo-app-with-vue-3-composition-api-1ok7
+<script setup>
 
 import { provide } from "vue";
 import store from "./store";
 import ShoppingLists from "./components/ShoppingLists.vue";
-import ShoppingListEntries from "./components/ListEntries.vue";
+import ListEntries from "./components/ListEntries.vue";
+import ShoppingListEntries from "./components/ShoppingListEntries.vue";
+import NavBar from './components/nav/NavBar.vue';
 
-export default {
-  setup() {
-    provide('store', store)
 
-    return {};
-  },
-  components: {
-    ShoppingLists,
-    ShoppingListEntries,
-  },
-};
+provide('store', store)
+// export default {
+//   setup() {
+//     provide('store', store)
+
+//     return {};
+//   },
 </script>
 
 <template>
-  <div class="container-lg vh-100">
-    <header
+  <NavBar></NavBar>
+  <div class="p-2 w-screen md:w-7/12 xl:w-2/5 mx-auto flex flex-col flex-1 bg-white">
+    <!-- <div class="container-lg vh-100"> -->
+    <!-- <header
       class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom"
     >
       <a
@@ -43,10 +43,11 @@ export default {
       <div class="text-end">
         <button type="button" class="btn btn-light me-2">Logout</button>
       </div>
-    </header>
-    <div style="max-width: 600px; margin: auto">
-      <shopping-lists />
-      <shopping-list-entries />
-    </div>
+    </header>-->
+    <!-- <div style="max-width: 600px; margin: auto"> -->
+    <shopping-lists />
+    <!-- <list-entries /> -->
+    <shopping-list-entries />
   </div>
+  <!-- </div> -->
 </template>
