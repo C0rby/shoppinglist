@@ -1,9 +1,9 @@
 <script setup>
 </script>
 <template>
-    <header class="text-gray-600 body-font mb-4">
-        <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
-            <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
+    <header class="text-gray-600 body-font">
+        <div class="container mx-auto flex flex-wrap p-3 flex-col md:flex-row items-center">
+            <a class="flex title-font font-medium items-center text-gray-900">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="w-10 h-10 text-white p-1 bg-emerald-500 rounded-full"

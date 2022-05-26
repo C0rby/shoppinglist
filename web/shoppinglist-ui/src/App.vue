@@ -1,25 +1,20 @@
-<script setup>
+<script setup lang="ts">
 
-import { provide } from "vue";
-import store from "./store";
+import { ref } from "vue";
 import ShoppingLists from "./components/ShoppingLists.vue";
-import ListEntries from "./components/ListEntries.vue";
 import ShoppingListEntries from "./components/ShoppingListEntries.vue";
 import NavBar from './components/nav/NavBar.vue';
 
+const selectedList = ref("")
 
-provide('store', store)
-// export default {
-//   setup() {
-//     provide('store', store)
-
-//     return {};
-//   },
+function selected(id: string) {
+    selectedList.value = id
+}
 </script>
 
 <template>
   <NavBar></NavBar>
-  <div class="p-2 w-screen md:w-7/12 xl:w-2/5 mx-auto flex flex-col flex-1 bg-white">
+  <div class="w-screen md:w-7/12 xl:w-2/5 mx-auto flex flex-col flex-1 bg-white">
     <!-- <div class="container-lg vh-100"> -->
     <!-- <header
       class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom"
@@ -45,9 +40,8 @@ provide('store', store)
       </div>
     </header>-->
     <!-- <div style="max-width: 600px; margin: auto"> -->
-    <shopping-lists />
-    <!-- <list-entries /> -->
-    <shopping-list-entries />
+    <shopping-lists @list-selected="selected"/>
+    <shopping-list-entries :selectedlist-id="selectedList" />
   </div>
   <!-- </div> -->
 </template>
