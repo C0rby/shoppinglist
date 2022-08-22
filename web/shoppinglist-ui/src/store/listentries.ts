@@ -1,11 +1,16 @@
 import { reactive, toRefs } from "vue";
 
-const state = reactive({
+interface State {
+    listEntries: Object[]
+    loading: boolean
+}
+
+const state: State = reactive({
     listEntries: [],
     loading: true,
 });
 
-function addEntry(listId, name, amount) {
+function addEntry(listId: string, name: string, amount: string) {
       fetch(
         import.meta.env.VITE_BACKEND_URL +
           "/api/v1/shoppinglists/" +
@@ -21,27 +26,22 @@ function addEntry(listId, name, amount) {
       )
         .then((res) => {
           if (!res.ok) {
-            const error = new Error(res.statusText);
+            const error: any = new Error(res.statusText);
             error.json = res.json();
             throw error;
           }
           return res.json();
         })
-        .then((json) => {
-          listEntries.value.push(json);
+        .then((json: Object) => {
+          state.listEntries.push(json);
         })
-        .catch((err) => {
-          error.value = err;
-          if (err.json) {
-            return err.json.then((json) => {
-              error.value.message = json.message;
-            });
-          }
+        .catch((err: any) => {
+            // TODO properly handle errors
         });
     }
 
 export default function useShoppingListEntries() {
-    const fetchListEntries = async (listId) => {
+    const fetchListEntries = async (listId: string) => {
     const url = import.meta.env.VITE_BACKEND_URL + "/api/v1/shoppinglists/" + listId + "/entries";
         state.loading = true;
         state.listEntries = await (await fetch(url)).json();

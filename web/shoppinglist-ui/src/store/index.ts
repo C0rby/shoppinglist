@@ -19,7 +19,7 @@ const methods = {
         state.shoppinglists = await (await fetch(url)).json();
         state.loading = false;
     },
-    async fetchListEntries(listId) {
+    async fetchListEntries(listId: string) {
         const url = import.meta.env.VITE_BACKEND_URL + "/api/v1/shoppinglists/" + listId + "/entries";
         state.loadingEntries = true;
         state.listEntries = await (await fetch(url)).json();
