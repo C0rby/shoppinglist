@@ -2,10 +2,12 @@ package server
 
 import (
 	"net/http"
+	"io/fs"
 
 	"github.com/c0rby/shoppinglist/pkg/api"
 	"github.com/c0rby/shoppinglist/pkg/service"
 	"github.com/c0rby/shoppinglist/pkg/storage"
+	"github.com/c0rby/shoppinglist/ui"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
@@ -39,6 +41,8 @@ func (s Server) ListenAndServe() error {
 	}
 	service := service.New(store)
 	router.Mount("/api", api.Handler(service))
+	stripped, _ := fs.Sub(ui.Content, ui.StripPath)
+	router.Mount("/", http.FileServer(http.FS(stripped)))
 
 	return http.ListenAndServe(s.address, router)
 }
