@@ -16,6 +16,7 @@ const conn = new WebSocket(import.meta.env.VITE_WS_URL + "/api/v1/ws")
 const loading = ref(false)
 const listEntries = ref<entry[]>([])
 const search = ref('')
+const amount = ref('')
 
 conn.onclose = () => {
     let item = document.createElement("div");
@@ -39,6 +40,38 @@ async function fetchListEntries(listId: string) {
 watchEffect(async () => {
     await fetchListEntries(props.selectedlistId)
 })
+
+const addEntry = (listId: string, name: string) => {
+    fetch(
+        import.meta.env.VITE_BACKEND_URL +
+          "/api/v1/shoppinglists/" +
+          listId +
+          "/entries",
+        {
+          method: "post",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ name: name, amount: amount.value}),
+        }
+    )
+    .then((res) => {
+      search.value = '';
+      amount.value = '';
+      if (!res.ok) {
+        const error: any = new Error(res.statusText);
+        error.json = res.json();
+        throw error;
+      }
+      return res.json();
+    })
+    .then((json: entry) => {
+      listEntries.value.push(json);
+    })
+    .catch((err: any) => {
+        // TODO properly handle errors
+    });
+}
 
 const updateEntry = (listId: string, entry: entry) => {
     entry.buy = !entry.buy;
@@ -112,33 +145,11 @@ const filteredResults = computed(() => {
                 return 1
             }
             return 0
-
         });
-
 })
-//const { loading, fetchListEntries, listEntries, addEntry } = useShoppingListEntries();
-/*
-const search = ref("");
-const name = ref("");
-const amount = ref("");
-
-
-watch(() => store.state.selectedList, (val) => {
-    store.methods.fetchListEntries(val.id);
-});
-
-
-
-
-const clearSearch = () => {
-    search.value = "";
-}
-
-
-*/
 </script>
 <template>
-    <div class="flex items-center bg-gray-200 rounded-md mt-4 mx-2 md:mx-1">
+    <div class="flex items-center bg-gray-200 rounded-md mt-4 mx-2">
         <div class="pl-2">
             <svg class="fill-current text-gray-500 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path class="heroicon-ui"
@@ -149,19 +160,29 @@ const clearSearch = () => {
             class="w-full rounded-md bg-gray-200 text-gray-700 leading-tight focus:outline-none py-2 px-2 border-0 focus:ring-0 ring-0"
             id="search" type="text" placeholder="Search or add" v-model="search" />
     </div>
-    <div class="mt-4 text-sm flex flex-col flex-auto h-0 overflow-y-scroll px-2 md:px-1">
+    <div v-if="search" class="mt-2 flex justify-center items-center flex-wrap">
+        Add {{search}} to the list?
+        <input
+            class="ml-4 rounded-md bg-gray-200 focus:outline-none py-2 px-2 border-0 focus:ring-0 ring-0 w-20"
+            id="amount" type="text" placeholder="Amount" v-model="amount" />
+        <button 
+        class="ml-4 shadow bg-emerald-500 hover:bg-emerald-700 focus:shadow-outline focus:outline-none text-white text-xs py-3 px-5 rounded"
+        @click="addEntry(props.selectedlistId, search)"
+        >Add</button>
+    </div>
+    <div class="mt-4 text-sm flex flex-col flex-auto h-0 overflow-y-scroll px-2">
         <div v-for="entry in filteredResults" :key="entry.id"
             class="flex justify-start cursor-pointer text-gray-700 my-4 first:mt-0 last:mb-0 items-center">
-            <label class="flex flex-grow justify-start items-start">
+            <label class="flex flex-grow justify-start items-start shrink">
                 <input type="checkbox"
-                    class="w-8 h-8 rounded-full transition-colors duration-400 focus:outline-0 focus:ring-0 focus:ring-offset-0"
-                    :class="{ 'text-emerald-500': !entry.buy }" :checked="!entry.buy"
+                    class="w-7 h-7 rounded-full transition-colors duration-400 border-emerald-500 focus:outline-0 focus:ring-0 focus:ring-offset-0"
+                    :class="{ 'text-gray-500': !entry.buy, 'text-emerald-500': entry.buy }" :checked="!entry.buy"
                     @change="updateEntry(props.selectedlistId, entry)" />
-                <div class="flex-grow font-bold text-xl ml-2" :class="{ 'text-gray-300 line-through': !entry.buy }">{{
+                <div class="flex-grow text-xl ml-2" :class="{ 'text-gray-300 line-through': !entry.buy }">{{
                         entry.name
                 }}</div>
             </label>
-            <div class=" font-normal text-gray-500 mr-2">{{ entry.amount }}</div>
+            <div class="font-normal text-gray-500 mr-2">{{ entry.amount }}</div>
             <div class="dropdown">
                 <button class="text-gray-500 focus:outline-none h-7 flex items-center" type="button"
                     aria-haspopup="true" aria-expanded="true" aria-controls="headlessui-menu-items-117">

@@ -40,9 +40,9 @@ function selectList(list: list) {
 
 </script>
 <template>
-    <ul class="flex cursor-pointer">
+    <ul class="flex cursor-pointer mx-2 overflow-x-scroll">
         <li v-for="l of shoppinglists" :class="{ 'bg-emerald-500 text-white': selectedList == l }"
-            class="py-2 px-6 rounded-t-lg bg-gray-200 text-gray-500" :key="l.id" @click="selectList(l)">
+            class="py-2 px-6 rounded-t-lg bg-gray-200 text-gray-500 min-w-fit" :key="l.id" @click="selectList(l)">
             {{ l.name }}</li>
     </ul>
     <!-- <div class="row">
