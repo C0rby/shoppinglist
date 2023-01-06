@@ -159,6 +159,13 @@ const filteredResults = computed(() => {
         <input
             class="w-full rounded-md bg-gray-200 text-gray-700 leading-tight focus:outline-none py-2 px-2 border-0 focus:ring-0 ring-0"
             id="search" type="text" placeholder="Search or add" v-model="search" />
+        <button v-if="search" 
+        class="ml-4 focus:shadow-outline focus:outline-none mx-2 text-gray-500"
+        @click="search = ''"
+        ><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+</svg>
+</button>
     </div>
     <div v-if="search" class="mt-2 flex justify-center items-center flex-wrap">
         Add {{search}} to the list?
