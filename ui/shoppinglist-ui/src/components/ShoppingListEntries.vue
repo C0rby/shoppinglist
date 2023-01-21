@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang='ts'>
 
 import { ref, watchEffect, toRaw, computed } from 'vue'
 
