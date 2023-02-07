@@ -13,10 +13,10 @@ function selected(id: string) {
 </script>
 
 <template>
-  <NavBar></NavBar>
-  <div class="w-screen md:w-7/12 xl:w-2/5 mx-auto flex flex-col flex-1 bg-white">
-    <!-- <div class="container-lg vh-100"> -->
-    <!-- <header
+    <NavBar></NavBar>
+    <div class="w-screen md:w-7/12 xl:w-2/5 mx-auto flex flex-col flex-1">
+        <!-- <div class="container-lg vh-100"> -->
+        <!-- <header
       class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom"
     >
       <a
@@ -39,9 +39,9 @@ function selected(id: string) {
         <button type="button" class="btn btn-light me-2">Logout</button>
       </div>
     </header>-->
-    <!-- <div style="max-width: 600px; margin: auto"> -->
-    <shopping-lists @list-selected="selected"/>
-    <shopping-list-entries :selectedlist-id="selectedList" />
-  </div>
-  <!-- </div> -->
+        <!-- <div style="max-width: 600px; margin: auto"> -->
+        <shopping-lists @list-selected="selected" />
+        <shopping-list-entries :selectedlist-id="selectedList" />
+    </div>
+    <!-- </div> -->
 </template>
